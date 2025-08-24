@@ -3,31 +3,41 @@
 A **PDF-based RAG (Retrieval-Augmented Generation) Chatbot** built using **Python, Streamlit, LangChain, Google Gemini, and Chroma**.  
 Ask questions from your uploaded PDFs and get context-aware answers with citations.
 
+## Link - https://rag-pdf-chatbot-syjgd8m5rzasfkkamklk5m.streamlit.app/
+
 ---
 <img width="3111" height="2022" alt="image" src="https://github.com/user-attachments/assets/bb845d50-5739-40f6-aeb7-4b1daae754ad" />
 
 ## 🚀 Features
 
-- Upload multiple PDF files for context-aware question answering.
-- Uses **LangChain** for RAG architecture.
-- **Google Gemini LLM** for natural language answers.
-- **Chroma embeddings** for efficient vector-based document retrieval.
-- Prompt engineering & few-shot learning to improve response accuracy.
-- Optional citation support for answers.
-- Streamlit UI for a simple and interactive chat experience.
+Upload multiple PDF files for context-aware question answering.
 
----
+Uses LangChain for RAG architecture.
+
+Google Gemini LLM for natural language answers.
+
+FAISS embeddings for efficient vector-based document retrieval.
+
+Prompt engineering & few-shot learning to improve response accuracy.
+
+Optional citation support for answers.
+
+Streamlit UI for a simple and interactive chat experience.
 
 ## 🛠️ Tech Stack
 
-- **Python** – Core programming language  
-- **Streamlit** – Web interface for interactive chat  
-- **LangChain** – RAG and retrieval chains  
-- **Google Gemini API** – Large language model integration  
-- **Chroma** – Vector store for document embeddings  
-- **PyPDF2** – PDF text extraction  
+Python – Core programming language
 
----
+Streamlit – Web interface for interactive chat
+
+LangChain – RAG and retrieval chains
+
+Google Gemini API – Large language model integration
+
+FAISS – Vector store for document embeddings
+
+PyPDF2 – PDF text extraction
+
 
 ## ⚡ Quickstart
 
