@@ -15,7 +15,10 @@ try:
 except RuntimeError:
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+def configure_gemini():
+    api_key = st.secrets["GOOGLE_API_KEY"]  
+    genai.configure(api_key=api_key)
+    return api_key
 # ---- Utility Functions ----
 def get_pdf_text(pdf_docs):
     text = ""
@@ -33,27 +36,27 @@ def get_text_chunks(text):
     return chunks
 
 def get_vector_store(chunks):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")  # type: ignore
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")  
 
-    # Try to close any existing Chroma DB to release file locks
+    
     try:
         old_store = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
         old_store.delete_collection()  # clears stored data
     except Exception as e:
         print("No existing DB to clear or already closed:", e)
 
-    # Remove old folder if it still exists
+   
     import shutil
     import time
     if os.path.exists("chroma_db"):
-        for _ in range(3):  # retry up to 3 times in case Windows still locks
+        for _ in range(3):  
             try:
                 shutil.rmtree("chroma_db")
                 break
             except PermissionError:
-                time.sleep(1)  # wait 1 sec and retry
+                time.sleep(1)  
 
-    # Create new Chroma DB
+   
     vectorstore = Chroma.from_texts(
         chunks,
         embedding=embeddings,
@@ -95,7 +98,7 @@ def user_input(user_question):
 
     # Load Chroma vectorstore
     vectorstore = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
-    docs = vectorstore.similarity_search(user_question, k=3)  # top 3 docs
+    docs = vectorstore.similarity_search(user_question, k=3)  
 
     chain = get_conversational_chain()
     response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
@@ -103,6 +106,7 @@ def user_input(user_question):
 
 # ---- Streamlit App ----
 def main():
+    configure_gemini()
     st.set_page_config(page_title="PDF Chatbot", page_icon="🤖")
     st.title("Chat with PDF files 🤖")
 
