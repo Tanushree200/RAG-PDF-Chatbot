@@ -6,7 +6,8 @@ Ask questions from your uploaded PDFs and get context-aware answers with citatio
 ## Link - https://rag-pdf-chatbot-syjgd8m5rzasfkkamklk5m.streamlit.app/
 
 ---
-<img width="3111" height="2022" alt="image" src="https://github.com/user-attachments/assets/bb845d50-5739-40f6-aeb7-4b1daae754ad" />
+<img width="3182" height="2041" alt="image" src="https://github.com/user-attachments/assets/5a3cf48e-7e1c-45ae-a80a-a5558c68d475" />
+
 
 ## 🚀 Features
 
