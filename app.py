@@ -1,5 +1,4 @@
 import asyncio
-import os
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
@@ -9,7 +8,7 @@ from langchain.vectorstores import Chroma
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
 
-# Ensure asyncio event loop works in Streamlit
+# Ensure asyncio works in Streamlit
 try:
     asyncio.get_event_loop()
 except RuntimeError:
@@ -39,16 +38,16 @@ def get_text_chunks(text):
 def get_vector_store(chunks):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-    # Create in-memory Chroma (avoids SQLite issues on Streamlit Cloud)
+    # Create in-memory Chroma (no SQLite)
     vectorstore = Chroma.from_texts(
         chunks,
         embedding=embeddings,
         persist_directory=None,  # disables SQLite persistence
-        client_settings={"chroma_db_impl": "duckdb+parquet"}
+        client_settings={"chroma_db_impl": "in_memory"}
     )
 
     st.session_state.vectorstore_created = True
-    st.session_state.vectorstore = vectorstore  # save in session for reuse
+    st.session_state.vectorstore = vectorstore  # store in session
 
 def get_conversational_chain():
     prompt_template = """
@@ -77,9 +76,8 @@ def user_input(user_question):
         st.warning("Please upload and process PDFs first.")
         return {"output_text": ["No vectorstore found."]}
 
-    vectorstore = st.session_state.vectorstore  # use in-memory vectorstore
+    vectorstore = st.session_state.vectorstore
     docs = vectorstore.similarity_search(user_question, k=3)
-
     chain = get_conversational_chain()
     return chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
 
@@ -106,11 +104,10 @@ def main():
         st.header("Chat Options")
         st.button("Clear Chat History", on_click=clear_chat_history)
 
-    # Initialize chat messages
     if "messages" not in st.session_state:
         clear_chat_history()
 
-    # Display existing chat messages
+    # Display chat messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
