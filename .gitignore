@@ -1,0 +1,11 @@
+# Python virtual environment
+venv/
+
+# Chroma database folder
+chroma_db/
+
+# Python cache
+__pycache__/
+
+# Environment file (contains secrets)
+.env
