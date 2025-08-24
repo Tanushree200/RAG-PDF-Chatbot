@@ -1,4 +1,4 @@
-# RAG PDF Chatbot
+# SmartDoc PDF Chatbot
 
 A **PDF-based RAG (Retrieval-Augmented Generation) Chatbot** built using **Python, Streamlit, LangChain, Google Gemini, and Chroma**.  
 Ask questions from your uploaded PDFs and get context-aware answers with citations.
