@@ -1,6 +1,5 @@
 import asyncio
 import os
-import shutil
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
@@ -9,16 +8,19 @@ import google.generativeai as genai
 from langchain.vectorstores import Chroma
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
-from dotenv import load_dotenv
+
+# Ensure asyncio event loop works in Streamlit
 try:
     asyncio.get_event_loop()
 except RuntimeError:
     asyncio.set_event_loop(asyncio.new_event_loop())
 
+# ---- Configure Gemini API ----
 def configure_gemini():
-    api_key = st.secrets["GOOGLE_API_KEY"]  
+    api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
     return api_key
+
 # ---- Utility Functions ----
 def get_pdf_text(pdf_docs):
     text = ""
@@ -32,40 +34,21 @@ def get_pdf_text(pdf_docs):
 
 def get_text_chunks(text):
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    chunks = splitter.split_text(text)
-    return chunks
+    return splitter.split_text(text)
 
 def get_vector_store(chunks):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")  
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-    
-    try:
-        old_store = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
-        old_store.delete_collection()  # clears stored data
-    except Exception as e:
-        print("No existing DB to clear or already closed:", e)
-
-   
-    import shutil
-    import time
-    if os.path.exists("chroma_db"):
-        for _ in range(3):  
-            try:
-                shutil.rmtree("chroma_db")
-                break
-            except PermissionError:
-                time.sleep(1)  
-
-   
+    # Create in-memory Chroma (avoids SQLite issues on Streamlit Cloud)
     vectorstore = Chroma.from_texts(
         chunks,
         embedding=embeddings,
-        persist_directory="chroma_db",
+        persist_directory=None,  # disables SQLite persistence
         client_settings={"chroma_db_impl": "duckdb+parquet"}
     )
-    vectorstore.persist()
-    st.session_state.vectorstore_created = True
 
+    st.session_state.vectorstore_created = True
+    st.session_state.vectorstore = vectorstore  # save in session for reuse
 
 def get_conversational_chain():
     prompt_template = """
@@ -82,8 +65,7 @@ def get_conversational_chain():
     """
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", client=genai, temperature=0.3)
     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
-    chain = load_qa_chain(llm=llm, chain_type="stuff", prompt=prompt)
-    return chain
+    return load_qa_chain(llm=llm, chain_type="stuff", prompt=prompt)
 
 def clear_chat_history():
     st.session_state.messages = [
@@ -91,18 +73,15 @@ def clear_chat_history():
     ]
 
 def user_input(user_question):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")  # type: ignore
     if not st.session_state.get("vectorstore_created", False):
         st.warning("Please upload and process PDFs first.")
         return {"output_text": ["No vectorstore found."]}
 
-    # Load Chroma vectorstore
-    vectorstore = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
-    docs = vectorstore.similarity_search(user_question, k=3)  
+    vectorstore = st.session_state.vectorstore  # use in-memory vectorstore
+    docs = vectorstore.similarity_search(user_question, k=3)
 
     chain = get_conversational_chain()
-    response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
-    return response
+    return chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
 
 # ---- Streamlit App ----
 def main():
@@ -126,12 +105,6 @@ def main():
 
         st.header("Chat Options")
         st.button("Clear Chat History", on_click=clear_chat_history)
-        if st.button("Reset Vectorstore"):
-            import shutil
-            if os.path.exists("chroma_db"):
-                shutil.rmtree("chroma_db")
-            st.session_state.vectorstore_created = False
-            st.success("✅ Vectorstore reset. You can upload new PDFs now.")
 
     # Initialize chat messages
     if "messages" not in st.session_state:
@@ -148,7 +121,6 @@ def main():
         with st.chat_message("user"):
             st.write(prompt)
 
-        # Bot response
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 response = user_input(prompt)
@@ -158,7 +130,6 @@ def main():
                 for item in output_text:
                     full_response += item
                     placeholder.markdown(full_response)
-                # Append bot response to session messages
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 if __name__ == "__main__":
