@@ -1,22 +1,23 @@
 import asyncio
+import os
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 import streamlit as st
 import google.generativeai as genai
-from langchain.vectorstores import Chroma
+from langchain.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
 
-# Ensure asyncio works in Streamlit
+# Ensure asyncio event loop
 try:
     asyncio.get_event_loop()
 except RuntimeError:
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-# ---- Configure Gemini API ----
+# ---- Gemini API Setup ----
 def configure_gemini():
-    api_key = st.secrets["GOOGLE_API_KEY"]
+    api_key = st.secrets["GOOGLE_API_KEY"]  
     genai.configure(api_key=api_key)
     return api_key
 
@@ -36,18 +37,10 @@ def get_text_chunks(text):
     return splitter.split_text(text)
 
 def get_vector_store(chunks):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-
-    # Create in-memory Chroma (no SQLite)
-    vectorstore = Chroma.from_texts(
-        chunks,
-        embedding=embeddings,
-        persist_directory=None,  # disables SQLite persistence
-        client_settings={"chroma_db_impl": "in_memory"}
-    )
-
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")  
+    vectorstore = FAISS.from_texts(chunks, embeddings)
     st.session_state.vectorstore_created = True
-    st.session_state.vectorstore = vectorstore  # store in session
+    st.session_state.vectorstore = vectorstore
 
 def get_conversational_chain():
     prompt_template = """
@@ -75,7 +68,7 @@ def user_input(user_question):
     if not st.session_state.get("vectorstore_created", False):
         st.warning("Please upload and process PDFs first.")
         return {"output_text": ["No vectorstore found."]}
-
+    
     vectorstore = st.session_state.vectorstore
     docs = vectorstore.similarity_search(user_question, k=3)
     chain = get_conversational_chain()
@@ -103,11 +96,17 @@ def main():
 
         st.header("Chat Options")
         st.button("Clear Chat History", on_click=clear_chat_history)
+        if st.button("Reset Vectorstore"):
+            st.session_state.vectorstore_created = False
+            if "vectorstore" in st.session_state:
+                del st.session_state.vectorstore
+            st.success("✅ Vectorstore reset. You can upload new PDFs now.")
 
+    # Initialize chat messages
     if "messages" not in st.session_state:
         clear_chat_history()
 
-    # Display chat messages
+    # Display existing chat messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
@@ -118,6 +117,7 @@ def main():
         with st.chat_message("user"):
             st.write(prompt)
 
+        # Bot response
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 response = user_input(prompt)
