@@ -77,8 +77,9 @@ def user_input(user_question):
 # ---- Streamlit App ----
 def main():
     configure_gemini()
-    st.set_page_config(page_title="PDF Chatbot", page_icon="🤖")
-    st.title("Chat with PDF files 🤖")
+    st.set_page_config(page_title="SmartDoc", page_icon="🤖")
+    st.title("SmartDoc")
+    st.subheader("Chat with your PDFs effortlessly 🤖")
 
     # Sidebar for PDF upload & processing
     with st.sidebar:
