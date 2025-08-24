@@ -4,6 +4,7 @@ A **PDF-based RAG (Retrieval-Augmented Generation) Chatbot** built using **Pytho
 Ask questions from your uploaded PDFs and get context-aware answers with citations.
 
 ---
+<img width="3111" height="2022" alt="image" src="https://github.com/user-attachments/assets/bb845d50-5739-40f6-aeb7-4b1daae754ad" />
 
 ## 🚀 Features
 
