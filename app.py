@@ -54,7 +54,12 @@ def get_vector_store(chunks):
                 time.sleep(1)  # wait 1 sec and retry
 
     # Create new Chroma DB
-    vectorstore = Chroma.from_texts(chunks, embeddings, persist_directory="chroma_db")
+    vectorstore = Chroma.from_texts(
+        chunks,
+        embedding=embeddings,
+        persist_directory="chroma_db",
+        client_settings={"chroma_db_impl": "duckdb+parquet"}
+    )
     vectorstore.persist()
     st.session_state.vectorstore_created = True
 
